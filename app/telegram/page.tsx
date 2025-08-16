@@ -61,5 +61,5 @@ export default function TelegramMiniAppPage() {
       <p>Status: {status}</p>
       <button onClick={sendToBot}>Send data to bot (tg.sendData)</button>
     </main>
-  )
+  ) 
 }
