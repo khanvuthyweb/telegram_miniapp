@@ -1,20 +1,34 @@
 'use client'
 import { useEffect, useState } from 'react'
 
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp?: TelegramWebApp
+    }
+  }
+
+  interface TelegramWebApp {
+    initData: string
+    ready: () => void
+    sendData: (data: string) => void
+    MainButton?: unknown
+  }
+}
+
 export default function TelegramMiniAppPage() {
   const [status, setStatus] = useState('waiting')
 
   useEffect(() => {
-    // run only in browser
-    const tg = (window as any).Telegram?.WebApp
+    const tg = window.Telegram?.WebApp
     if (!tg) {
       setStatus('Telegram WebApp not found (open inside Telegram)')
       return
     }
     try {
       tg.ready()
-      const initData = tg.initData // string (query string)
-      // Send to your server for validation
+      const initData = tg.initData
+
       fetch('/api/verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -28,18 +42,28 @@ export default function TelegramMiniAppPage() {
             setStatus('invalid initData ❌')
           }
         })
-        .catch((e) => setStatus('verify error: ' + e.message))
-    } catch (e: any) {
-      setStatus('error: ' + e.message)
+        .catch((e: unknown) => {
+          if (e instanceof Error) {
+            setStatus('verify error: ' + e.message)
+          } else {
+            setStatus('verify error: unknown')
+          }
+        })
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        setStatus('error: ' + e.message)
+      } else {
+        setStatus('error: unknown')
+      }
     }
   }, [])
 
-  const sendToBot = async () => {
-    const tg = (window as any).Telegram?.WebApp
+  const sendToBot = () => {
+    const tg = window.Telegram?.WebApp
     if (!tg) return
-    // send data to the bot as a service message, length <= 4096 bytes
-    tg.sendData(JSON.stringify({ action: 'hello_from_mini_app', ts: Date.now() }))
-    // or use tg.MainButton etc.
+    tg.sendData(
+      JSON.stringify({ action: 'hello_from_mini_app', ts: Date.now() })
+    )
   }
 
   return (
